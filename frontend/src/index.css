@@ -1,0 +1,206 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ─────────────────────────────────────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply font-sans text-gray-900 antialiased bg-slate-100;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
+
+/* ── Components ──────────────────────────────────────── */
+@layer components {
+  .btn-primary {
+      @apply bg-primary-700 hover:bg-primary-800 text-white font-medium px-6 py-2.5 rounded-xl
+        transition-all duration-200 shadow-md hover:shadow-lg active:scale-95
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+      @apply bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium px-6 py-2.5
+        rounded-xl transition-all duration-200 shadow-sm hover:shadow-md active:scale-95;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-2 rounded-lg
+           transition-all duration-200 shadow-sm active:scale-95;
+  }
+
+  .card {
+      @apply bg-white rounded-3xl shadow-sm border border-slate-200 p-6
+        hover:shadow-md transition-shadow duration-200;
+  }
+
+  .input-field {
+      @apply w-full border border-slate-200 rounded-xl px-4 py-3 text-sm
+        focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-300
+        transition-all duration-200 bg-slate-50 placeholder-slate-400;
+  }
+
+  .select-field {
+      @apply w-full border border-slate-200 rounded-xl px-4 py-3 text-sm
+        focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-300
+        transition-all duration-200 bg-slate-50;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1.5;
+  }
+
+  .badge-low {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-green-100 text-green-800;
+  }
+
+  .badge-medium {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-amber-100 text-amber-800;
+  }
+
+  .badge-high {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-red-100 text-red-800;
+  }
+
+  .badge-open {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-blue-100 text-blue-800;
+  }
+
+  .badge-investigating {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-purple-100 text-purple-800;
+  }
+
+  .badge-resolved {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-green-100 text-green-800;
+  }
+
+  .badge-dismissed {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-gray-100 text-gray-800;
+  }
+
+  /* Chat bubbles */
+  .chat-bubble-user {
+    @apply text-slate-800 rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed border;
+    background-color: #d7efc8;
+    border-color: #c6e5b3;
+  }
+
+  .chat-bubble-ai {
+    @apply bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed shadow-sm;
+  }
+
+  /* Gradient backgrounds */
+  .gradient-hero {
+    background: linear-gradient(180deg, #eef5fd 0%, #edf3fa 100%);
+  }
+
+  .gradient-card {
+    background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+  }
+
+  .scheme-shell {
+    @apply bg-white border border-slate-200 shadow-sm overflow-hidden;
+    border-radius: 28px;
+  }
+
+  .scheme-soft-header {
+    @apply border-b border-slate-200;
+    background-color: #edf4fb;
+  }
+
+  .scheme-chip {
+    @apply inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm;
+  }
+
+  .scheme-panel {
+    @apply bg-white border border-slate-200 shadow-sm;
+    border-radius: 24px;
+  }
+
+  .scheme-section-title {
+    @apply text-3xl sm:text-4xl font-bold tracking-tight text-slate-800;
+  }
+
+  /* India flag inspired top bar */
+  .india-bar {
+    background: linear-gradient(to right, #ff9933 0%, #ff9933 33%, #ffffff 33%, #ffffff 66%, #138808 66%, #138808 100%);
+  }
+
+  /* Typing animation */
+  .typing-dot {
+    @apply inline-block w-2 h-2 rounded-full bg-gray-400 mx-0.5;
+    animation: typing 1.2s infinite ease-in-out;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+}
+
+/* ── Keyframes ────────────────────────────────────────── */
+@keyframes typing {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s ease-out forwards;
+}
+
+/* ── Prose (for AI responses) ─────────────────────────── */
+.ai-response p {
+  margin-bottom: 0.5rem;
+}
+
+.ai-response ul, .ai-response ol {
+  margin-left: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.ai-response li {
+  margin-bottom: 0.25rem;
+}
+
+.ai-response strong {
+  font-weight: 600;
+}
