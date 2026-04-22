@@ -80,8 +80,7 @@ ranjit/
 ### 1. Clone and enter the project
 
 ```bash
-cd "/Users/ajaykumbhar/Desktop/ranjit"
-```
+git clone'paste the link of this repo'
 
 ### 2. Setup Backend
 
