@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,8 +11,9 @@
   }
 
   body {
-    @apply font-sans text-gray-900 antialiased bg-slate-100;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply font-sans text-slate-800 antialiased;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
+    min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -111,9 +114,7 @@
 
   /* Chat bubbles */
   .chat-bubble-user {
-    @apply text-slate-800 rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed border;
-    background-color: #d7efc8;
-    border-color: #c6e5b3;
+    @apply bg-primary-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed shadow-sm border border-primary-700;
   }
 
   .chat-bubble-ai {
@@ -122,16 +123,30 @@
 
   /* Gradient backgrounds */
   .gradient-hero {
-    background: linear-gradient(180deg, #eef5fd 0%, #edf3fa 100%);
+    background: linear-gradient(-45deg, #f0fdfa, #ccfbf1, #ffffff, #e0f2fe);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
   }
 
   .gradient-card {
-    background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+    background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.8) 100%);
+  }
+
+  /* Glassmorphism */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px];
+  }
+
+  .glass-nav {
+    @apply bg-white/80 backdrop-blur-lg border border-white/50 shadow-sm rounded-full;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-cyan-500;
   }
 
   .scheme-shell {
-    @apply bg-white border border-slate-200 shadow-sm overflow-hidden;
-    border-radius: 28px;
+    @apply glass-card overflow-hidden;
   }
 
   .scheme-soft-header {

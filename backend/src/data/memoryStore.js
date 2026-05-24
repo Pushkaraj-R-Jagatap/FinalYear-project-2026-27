@@ -25,9 +25,19 @@ const SCHEMES = schemesData.map((s, i) => ({
 const ADMINS = [
   {
     _id: 'admin-001',
+    username: 'sarthak',
+    email: 'admin@govai.in',
+    passwordHash: bcrypt.hashSync('sarthak', 10),
+    role: 'super_admin',
+    isActive: true,
+    lastLogin: null,
+    createdAt: nowDate(30),
+  },
+  {
+    _id: 'admin-002',
     username: 'admin',
     email: 'admin@govai.in',
-    passwordHash: bcrypt.hashSync('admin@123', 10),
+    passwordHash: bcrypt.hashSync('admin', 10),
     role: 'super_admin',
     isActive: true,
     lastLogin: null,
@@ -37,13 +47,13 @@ const ADMINS = [
 
 // ── Demo applications ───────────────────────────────────────────
 const NAMES = [
-  'Ramesh Kumar', 'Sunita Devi', 'Mohan Singh', 'Priya Sharma',
-  'Arjun Patel', 'Kavitha Rao', 'Sanjay Mishra', 'Anita Verma',
-  'Deepak Yadav', 'Meena Gupta', 'Raju Tiwari', 'Pooja Nair',
+  'sarthak jagatap', 'Sunita pawar', 'Mohan deshmukh', 'Priya rathos',
+  'Arjun kapoor', 'Kavitha pawar', 'Sanjay diskshit', 'Anita sathe',
+  'Deepak sharma', 'Meena shaikh', 'Raju deshmukh', 'Pooja thumb',
 ];
 const OCCUPATIONS = ['farmer', 'student', 'self-employed', 'artisan', 'laborer', 'unemployed'];
-const STATES = ['Maharashtra', 'Uttar Pradesh', 'Bihar', 'Rajasthan', 'Gujarat', 'Karnataka', 'Tamil Nadu', 'West Bengal'];
-const DISTRICTS = ['Pune', 'Nagpur', 'Lucknow', 'Patna', 'Jaipur', 'Ahmedabad', 'Bangalore', 'Chennai'];
+const STATES = ['Maharashtra', 'maharashtra', 'maharashtra', 'maharashtra', 'maharashtra', 'maharashtra', 'maharashtra', 'maharashtra'];
+const DISTRICTS = ['Pune', 'Nagpur', 'Nagpur', 'Pune', 'Pune', 'Pune', 'solapur', 'solapur', 'solapur', 'solapur', 'solapur', 'solapur'];
 
 function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
@@ -211,11 +221,117 @@ const FRAUD_ALERTS = [
 ];
 
 // ── Store Singleton ─────────────────────────────────────────────
+// ── Store Singleton ─────────────────────────────────────────────
 const store = {
   schemes: [...SCHEMES],
   applications: [...APPLICATIONS],
   fraudAlerts: [...FRAUD_ALERTS],
   admins: [...ADMINS],
+  users: [],
+  chatHistories: [],
+  notifications: [],
+  fraudReports: [],
+
+  // ── User helpers ──────────────────────────────────────────────
+  getUserById(id) {
+    return this.users.find(u => u._id === id || u.userId === id) || null;
+  },
+
+  getUserByEmail(email) {
+    return this.users.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
+  },
+
+  addUser(user) {
+    this.users.push(user);
+    return user;
+  },
+
+  updateUser(id, updates) {
+    const idx = this.users.findIndex(u => u._id === id || u.userId === id);
+    if (idx === -1) return null;
+    this.users[idx] = { ...this.users[idx], ...updates };
+    return this.users[idx];
+  },
+
+  // ── Chat history helpers ──────────────────────────────────────
+  getChatHistory(userId) {
+    return this.chatHistories.find(c => c.userId === userId) || null;
+  },
+
+  saveChatHistory(userId, messages) {
+    let history = this.getChatHistory(userId);
+    if (history) {
+      history.messages = messages;
+      history.updatedAt = new Date();
+    } else {
+      history = {
+        _id: `chat-${genId()}`,
+        userId,
+        messages,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.chatHistories.push(history);
+    }
+    return history;
+  },
+
+  deleteChatHistory(userId) {
+    this.chatHistories = this.chatHistories.filter(c => c.userId !== userId);
+    return true;
+  },
+
+  // ── Notification helpers ──────────────────────────────────────
+  getNotifications(userId) {
+    // Return user-specific notifications plus global notifications (userId === null)
+    return this.notifications.filter(n => n.userId === null || n.userId === userId);
+  },
+
+  addNotification(notification) {
+    const newNotif = {
+      _id: `notif-${genId()}`,
+      userId: notification.userId || null,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type || 'info',
+      read: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.notifications.push(newNotif);
+    return newNotif;
+  },
+
+  markNotificationRead(id) {
+    const notif = this.notifications.find(n => n._id === id);
+    if (notif) {
+      notif.read = true;
+      notif.updatedAt = new Date();
+    }
+    return notif;
+  },
+
+  // ── Fraud Report helpers ──────────────────────────────────────
+  getFraudReports() {
+    return this.fraudReports.sort((a, b) => b.createdAt - a.createdAt);
+  },
+
+  addFraudReport(report) {
+    const newReport = {
+      _id: `rep-${genId()}`,
+      reportId: `REP-${genId()}`,
+      fraudType: report.fraudType,
+      suspiciousLink: report.suspiciousLink || '',
+      scamMessage: report.scamMessage || '',
+      confidenceScore: report.confidenceScore || 0,
+      description: report.description || '',
+      status: 'open',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.fraudReports.push(newReport);
+    return newReport;
+  },
 
   // ── Scheme helpers ────────────────────────────────────────────
   getSchemes(filter = {}) {
@@ -226,7 +342,7 @@ const store = {
       const q = filter.search.toLowerCase();
       list = list.filter(s =>
         s.name.toLowerCase().includes(q) ||
-        s.shortName.toLowerCase().includes(q) ||
+        (s.shortName && s.shortName.toLowerCase().includes(q)) ||
         (s.tags || []).some(t => t.toLowerCase().includes(q))
       );
     }
@@ -235,6 +351,31 @@ const store = {
 
   getSchemeById(id) {
     return this.schemes.find(s => s._id === id) || null;
+  },
+
+  addScheme(scheme) {
+    const newScheme = {
+      _id: scheme._id || `scheme-${genId()}`,
+      ...scheme,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.schemes.push(newScheme);
+    return newScheme;
+  },
+
+  updateScheme(id, updates) {
+    const idx = this.schemes.findIndex(s => s._id === id);
+    if (idx === -1) return null;
+    this.schemes[idx] = { ...this.schemes[idx], ...updates, updatedAt: new Date() };
+    return this.schemes[idx];
+  },
+
+  deleteScheme(id) {
+    const idx = this.schemes.findIndex(s => s._id === id);
+    if (idx === -1) return false;
+    this.schemes.splice(idx, 1);
+    return true;
   },
 
   // ── Application helpers ───────────────────────────────────────

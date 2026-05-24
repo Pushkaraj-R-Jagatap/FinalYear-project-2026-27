@@ -16,13 +16,26 @@ const login = async (req, res, next) => {
       });
     }
 
-    const admin = store.getAdminByUsername(username);
-
-    if (!admin || !(await bcrypt.compare(password, admin.passwordHash))) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials.',
+    let admin = null;
+    if (global.useMemoryStore) {
+      admin = store.getAdminByUsername(username);
+      if (!admin || !(await bcrypt.compare(password, admin.passwordHash))) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid credentials.',
+        });
+      }
+    } else {
+      const Admin = require('../models/Admin');
+      admin = await Admin.findOne({
+        $or: [{ username }, { email: username.toLowerCase() }],
       });
+      if (!admin || !(await admin.comparePassword(password))) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid credentials.',
+        });
+      }
     }
 
     if (!admin.isActive) {
@@ -32,7 +45,14 @@ const login = async (req, res, next) => {
       });
     }
 
-    store.updateAdmin(admin._id, { lastLogin: new Date() });
+    // Update lastLogin
+    if (global.useMemoryStore) {
+      store.updateAdmin(admin._id, { lastLogin: new Date() });
+    } else {
+      admin.lastLogin = new Date();
+      await admin.save();
+    }
+
     const token = generateToken(admin._id);
 
     res.status(200).json({
@@ -58,31 +78,78 @@ const login = async (req, res, next) => {
  */
 const getDashboardStats = async (req, res, next) => {
   try {
-    const totalApplications = store.applications.length;
-    const pendingApplications = store.countApplications({ status: 'pending' });
-    const approvedApplications = store.countApplications({ status: 'approved' });
-    const rejectedApplications = store.countApplications({ status: 'rejected' });
-    const underReviewApplications = store.countApplications({ status: 'under_review' });
-    const totalFraudAlerts = store.countAlerts();
-    const openFraudAlerts = store.countAlerts({ status: 'open' });
-    const highRiskAlerts = store.countAlerts({ fraudLevel: 'high', status: 'open' });
-    const totalSchemes = store.schemes.filter(s => s.isActive).length;
+    let applications = [];
+    let fraudAlerts = [];
+    let schemesCount = 0;
 
-    // Charts
-    const appByScheme = store.groupApplicationsBy('schemeName', 8);
+    if (global.useMemoryStore) {
+      applications = store.applications;
+      fraudAlerts = store.fraudAlerts;
+      schemesCount = store.schemes.filter(s => s.isActive).length;
+    } else {
+      const Application = require('../models/Application');
+      const FraudAlert = require('../models/FraudAlert');
+      const Scheme = require('../models/Scheme');
+
+      applications = await Application.find({});
+      fraudAlerts = await FraudAlert.find({});
+      schemesCount = await Scheme.countDocuments({ isActive: true });
+    }
+
+    const totalApplications = applications.length;
+    const pendingApplications = applications.filter(a => a.status === 'pending').length;
+    const approvedApplications = applications.filter(a => a.status === 'approved').length;
+    const rejectedApplications = applications.filter(a => a.status === 'rejected').length;
+    const underReviewApplications = applications.filter(a => a.status === 'under_review').length;
+
+    const totalFraudAlerts = fraudAlerts.length;
+    const openFraudAlerts = fraudAlerts.filter(a => a.status === 'open').length;
+    const highRiskAlerts = fraudAlerts.filter(a => a.fraudLevel === 'high' && a.status === 'open').length;
+
+    // Aggregations in JS for environment consistency
+    // Group applications by schemeName
+    const schemeCounts = {};
+    applications.forEach(a => {
+      schemeCounts[a.schemeName] = (schemeCounts[a.schemeName] || 0) + 1;
+    });
+    const applicationsByScheme = Object.entries(schemeCounts)
+      .map(([name, count]) => ({ name, applications: count }))
+      .sort((a, b) => b.applications - a.applications)
+      .slice(0, 8);
+
+    // Group applications by status
     const statusCounts = {};
-    store.applications.forEach(a => {
+    applications.forEach(a => {
       statusCounts[a.status] = (statusCounts[a.status] || 0) + 1;
     });
-    const appByStatus = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+    const applicationsByStatus = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
-    const dailyApps = store.getDailyApplications(14);
-
+    // Fraud risk levels
     const fraudLevelCounts = {};
-    store.fraudAlerts.forEach(a => {
+    fraudAlerts.forEach(a => {
       fraudLevelCounts[a.fraudLevel] = (fraudLevelCounts[a.fraudLevel] || 0) + 1;
     });
     const fraudByLevel = Object.entries(fraudLevelCounts).map(([level, count]) => ({ level, count }));
+
+    // Daily Applications trend (last 14 days)
+    const dailyTrendMap = {};
+    const now = Date.now();
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now - i * 24 * 60 * 60 * 1000);
+      dailyTrendMap[d.toISOString().slice(0, 10)] = { total: 0, flagged: 0 };
+    }
+    applications.forEach(a => {
+      const day = new Date(a.createdAt).toISOString().slice(0, 10);
+      if (dailyTrendMap[day] !== undefined) {
+        dailyTrendMap[day].total++;
+        if (a.isFlagged) dailyTrendMap[day].flagged++;
+      }
+    });
+    const dailyApplications = Object.entries(dailyTrendMap).map(([date, v]) => ({
+      date,
+      applications: v.total,
+      fraudulent: v.flagged,
+    }));
 
     res.status(200).json({
       success: true,
@@ -96,12 +163,12 @@ const getDashboardStats = async (req, res, next) => {
           totalFraudAlerts,
           openFraudAlerts,
           highRiskAlerts,
-          totalSchemes,
+          totalSchemes: schemesCount,
         },
         charts: {
-          applicationsByScheme: appByScheme.map(i => ({ name: i.name, applications: i.count })),
-          applicationsByStatus: appByStatus,
-          dailyApplications: dailyApps,
+          applicationsByScheme,
+          applicationsByStatus,
+          dailyApplications,
           fraudByLevel,
         },
       },
@@ -121,21 +188,44 @@ const getApplications = async (req, res, next) => {
       scheme, sortBy = 'createdAt', sortOrder = 'desc',
     } = req.query;
 
-    const filter = {};
-    if (status) filter.status = status;
-    if (isFlagged !== undefined) filter.isFlagged = isFlagged === 'true';
-    if (scheme) filter.schemeName = scheme;
+    let applications = [];
+    let total = 0;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const { data: applications, total } = store.getApplications(filter, {
-      skip, limit: parseInt(limit), sortBy, sortOrder,
-    });
+    if (global.useMemoryStore) {
+      const filter = {};
+      if (status) filter.status = status;
+      if (isFlagged !== undefined) filter.isFlagged = isFlagged === 'true';
+      if (scheme) filter.schemeName = scheme;
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const resData = store.getApplications(filter, {
+        skip, limit: parseInt(limit), sortBy, sortOrder,
+      });
+      applications = resData.data;
+      total = resData.total;
+    } else {
+      const Application = require('../models/Application');
+      const filter = {};
+      if (status) filter.status = status;
+      if (isFlagged !== undefined) filter.isFlagged = isFlagged === 'true';
+      if (scheme) filter.schemeName = scheme;
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      total = await Application.countDocuments(filter);
+      applications = await Application.find(filter)
+        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(skip)
+        .limit(parseInt(limit));
+    }
 
     // Strip sensitive hashes
-    const safe = applications.map(a => ({
-      ...a,
-      applicant: { ...a.applicant, aadhaarHash: undefined, bankAccountHash: undefined },
-    }));
+    const safe = applications.map(a => {
+      const obj = typeof a.toObject === 'function' ? a.toObject() : a;
+      return {
+        ...obj,
+        applicant: { ...obj.applicant, aadhaarHash: undefined, bankAccountHash: undefined },
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -160,3 +250,4 @@ const getMe = async (req, res) => {
 };
 
 module.exports = { login, getDashboardStats, getApplications, getMe };
+

@@ -3,15 +3,15 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
 });
 
-// Add JWT token to admin requests
+// Add JWT token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('adminToken');
+  const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -25,6 +25,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('adminUser');
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userProfile');
     }
     return Promise.reject(error);
   }
@@ -46,6 +48,12 @@ export const schemesAPI = {
   getById: (id) => api.get(`/schemes/${id}`),
 
   findEligible: (userProfile) => api.post('/schemes/eligible', userProfile),
+
+  create: (data) => api.post('/schemes', data),
+
+  update: (id, data) => api.put(`/schemes/${id}`, data),
+
+  delete: (id) => api.delete(`/schemes/${id}`),
 };
 
 // ── Applications API ──────────────────────────────────

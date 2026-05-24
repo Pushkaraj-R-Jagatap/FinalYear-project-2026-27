@@ -7,7 +7,7 @@ export default function EligibilityPage() {
   const { language } = useLanguage();
 
   return (
-    <div className="bg-slate-100 min-h-screen px-4 sm:px-6 lg:px-8 py-6">
+    <div className="bg-transparent min-h-screen px-4 sm:px-6 lg:px-8 py-6">
       {/* Page Header */}
       <div className="max-w-6xl mx-auto scheme-shell gradient-hero text-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto text-center">

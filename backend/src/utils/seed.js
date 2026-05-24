@@ -19,6 +19,7 @@ const Scheme = require('../models/Scheme');
 const Application = require('../models/Application');
 const FraudAlert = require('../models/FraudAlert');
 const Admin = require('../models/Admin');
+const User = require('../models/User');
 const schemesData = require('../data/schemesData');
 const { detectFraud, createFraudAlert } = require('../services/fraudDetectionService');
 
@@ -74,15 +75,49 @@ async function seedSchemes() {
   return schemes;
 }
 
+async function seedUsers() {
+  await User.deleteMany({});
+
+  const users = [
+    {
+      name: 'Ranjit Patil',
+      email: 'user@govai.in',
+      password: 'user@123',
+      languagePreference: 'mr',
+      role: 'user',
+    },
+    {
+      name: 'Sujata Deshmukh',
+      email: 'citizen@govai.in',
+      password: 'user@123',
+      languagePreference: 'hi',
+      role: 'user',
+    },
+    {
+      name: 'Arjun Kumar',
+      email: 'arjun@govai.in',
+      password: 'user@123',
+      languagePreference: 'en',
+      role: 'user',
+    },
+  ];
+
+  for (const u of users) {
+    await User.create(u);
+  }
+
+  console.log(`✅ Seeded ${users.length} citizen users`);
+}
+
 async function seedAdmin() {
   await Admin.deleteMany({});
   const admin = await Admin.create({
     username: 'admin',
     email: 'admin@govai.in',
-    password: 'admin@123',
+    password: 'admin',
     role: 'super_admin',
   });
-  console.log(`✅ Admin created — username: admin | password: admin@123`);
+  console.log(`✅ Admin created — username: admin | password: admin`);
   return admin;
 }
 
@@ -413,12 +448,14 @@ async function main() {
 
   try {
     const schemes = await seedSchemes();
+    await seedUsers();
     await seedAdmin();
     await seedApplications(schemes);
 
     console.log('\n✅ Database seeded successfully!');
     console.log('────────────────────────────────────');
     console.log('👤 Admin Login: admin / admin@123');
+    console.log('👤 User Login:  user@govai.in / user@123');
     console.log('🌐 Frontend:    http://localhost:5173');
     console.log('🔗 Backend:     http://localhost:5000');
     console.log('────────────────────────────────────\n');

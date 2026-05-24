@@ -3,11 +3,12 @@ import {
   BarChart3, LogOut, RefreshCw, FileText, AlertTriangle, Shield, Layers,
   Eye, EyeOff, Loader2, ChevronRight,
 } from 'lucide-react';
-import { adminAPI, fraudAPI } from '../services/api';
+import { adminAPI, fraudAPI, schemesAPI } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../utils/translations';
 import StatsCard from '../components/admin/StatsCard';
 import FraudTable from '../components/admin/FraudTable';
+import SchemeManagement from '../components/admin/SchemeManagement';
 import {
   SchemeBarChart,
   DailyTrendChart,
@@ -101,8 +102,8 @@ function LoginForm({ onLogin }) {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-5">
-          Demo: <span className="font-mono bg-gray-100 px-1 rounded">admin</span> /{' '}
-          <span className="font-mono bg-gray-100 px-1 rounded">admin@123</span>
+           <span className="font-mono bg-gray-100 px-1 rounded"></span> {' '}
+          <span className="font-mono bg-gray-100 px-1 rounded"></span>
         </p>
       </div>
     </div>
@@ -169,9 +170,9 @@ export default function AdminPage() {
   const charts = stats?.charts || {};
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-transparent min-h-screen">
       {/* Dashboard Header */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
+      <div className="glass-card mb-6 mx-4 sm:mx-6 lg:mx-8 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 gradient-hero rounded-xl flex items-center justify-center">
@@ -276,6 +277,7 @@ export default function AdminPage() {
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'fraud', label: `Fraud Alerts (${alerts.filter(a => a.status === 'open').length})`, icon: AlertTriangle },
             { id: 'applications', label: 'Applications', icon: FileText },
+            { id: 'schemes', label: 'Manage Schemes', icon: Layers },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -454,6 +456,11 @@ export default function AdminPage() {
               </table>
             </div>
           </div>
+        )}
+        
+        {/* ── Manage Schemes Tab ────────────────────────────── */}
+        {activeTab === 'schemes' && (
+          <SchemeManagement />
         )}
       </div>
     </div>

@@ -129,7 +129,7 @@ export function FraudPieChart({ data }) {
   if (!data?.length) return <EmptyChart />;
 
   const pieData = data.map((d) => ({
-    name: d.level?.charAt(0).toUpperCase() + d.level?.slice(1) || 'Unknown',
+    name: d.level ? d.level.charAt(0).toUpperCase() + d.level.slice(1) : 'Unknown',
     value: d.count,
     color: FRAUD_LEVEL_COLORS[d.level] || COLORS.gray,
   }));
@@ -169,7 +169,7 @@ export function StatusBarChart({ data }) {
   if (!data?.length) return <EmptyChart />;
 
   const formatted = data.map((d) => ({
-    status: d.name?.charAt(0).toUpperCase() + d.name?.slice(1).replace('_', ' '),
+    status: d.name ? d.name.charAt(0).toUpperCase() + d.name.slice(1).replace('_', ' ') : 'Unknown',
     count: d.value,
     fill: STATUS_COLORS[d.name] || COLORS.gray,
   }));

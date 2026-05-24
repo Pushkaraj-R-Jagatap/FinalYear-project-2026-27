@@ -78,7 +78,7 @@ const callAI = async (messages, language = 'en') => {
       {
         model,
         messages: allMessages,
-        max_tokens: 1024,
+        max_tokens: 4096,
         temperature: 0.7,
         stream: false,
       },
@@ -97,14 +97,45 @@ const callAI = async (messages, language = 'en') => {
     console.error('❌ AI API Error:', errMsg);
 
     // Return informative fallback instead of crashing
-    return getMockResponse(messages[messages.length - 1].content, language);
+    return getMockResponse(messages[messages.length - 1].content, language, errMsg);
   }
 };
 
 /**
- * Fallback mock responses when no AI key is configured
+ * Fallback mock responses when no AI key is configured or API fails
  */
-const getMockResponse = (query, language) => {
+const getMockResponse = (query, language, errMsg = null) => {
+  if (query.includes('Return ONLY a valid JSON array')) {
+    return JSON.stringify([
+      {
+        "name": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+        "shortName": "PM-KISAN",
+        "category": "agriculture",
+        "description": "Financial support for landholding farmers.",
+        "benefits": ["₹6,000 per year in three installments"],
+        "documentsRequired": ["Aadhaar Card", "Bank Passbook", "Land Records"],
+        "applicationProcess": ["Step 1: Visit PM-KISAN portal", "Step 2: Enter Aadhaar details", "Step 3: Submit application"],
+        "officialLink": "https://pmkisan.gov.in",
+        "matchReasons": ["Based on your profile, you may be eligible."],
+        "ministry": "Ministry of Agriculture",
+        "launchYear": "2019"
+      },
+      {
+        "name": "Ayushman Bharat (PMJAY)",
+        "shortName": "PMJAY",
+        "category": "health",
+        "description": "Health insurance for poor families.",
+        "benefits": ["Health cover of ₹5 Lakhs per family per year"],
+        "documentsRequired": ["Aadhaar Card", "Ration Card"],
+        "applicationProcess": ["Step 1: Check eligibility online", "Step 2: Visit nearest CSC", "Step 3: Get Ayushman Card"],
+        "officialLink": "https://mera.pmjay.gov.in",
+        "matchReasons": ["Your income makes you eligible for this scheme."],
+        "ministry": "Ministry of Health and Family Welfare",
+        "launchYear": "2018"
+      }
+    ]);
+  }
+
   const lowerQuery = query.toLowerCase();
 
   // Match common keywords
@@ -131,7 +162,11 @@ const getMockResponse = (query, language) => {
       : 'I can help you with information about Indian government schemes. Please provide your age, income, and occupation so I can recommend the most relevant schemes for you. Common schemes include PM-KISAN (farmers), Ayushman Bharat (health), PM Awas Yojana (housing), MUDRA Loan (business), and more.';
   }
 
-  return `${schemeInfo}\n\n⚠️ *Note: AI service is currently using offline mode. For real-time AI responses, configure GROQ_API_KEY in backend/.env*`;
+  const warningMsg = errMsg 
+    ? `\n\n⚠️ *Note: AI API is currently unavailable (${errMsg}). Using offline mode.*`
+    : `\n\n⚠️ *Note: AI service is currently using offline mode. For real-time AI responses, configure GROQ_API_KEY in backend/.env*`;
+
+  return `${schemeInfo}${warningMsg}`;
 };
 
 module.exports = { callAI, SYSTEM_PROMPT };

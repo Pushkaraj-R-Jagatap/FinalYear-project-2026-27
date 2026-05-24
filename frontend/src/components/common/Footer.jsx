@@ -8,19 +8,19 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-primary-700 flex items-center justify-center">
-                <span className="text-white font-bold">G</span>
+            <div className="flex items-center gap-3 mb-4 group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 to-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                <Bot size={20} className="text-white" />
               </div>
-              <span className="text-white text-lg font-bold">
-                Gov<span className="text-orange-400">AI</span>
+              <span className="text-white text-xl font-bold tracking-tight">
+                Scheme<span className="text-indigo-400">AI</span>
               </span>
             </div>
-            <p className="text-sm leading-relaxed">
+            <p className="text-sm leading-relaxed text-gray-400 font-light max-w-xs">
               AI-powered platform helping Indian citizens discover government schemes,
               check eligibility, and detect fraud.
             </p>
-            <p className="text-xs mt-3 text-gray-600">
+            <p className="text-xs mt-4 text-indigo-500/80 font-medium">
               🏆 Built for GovTech Hackathon 2026
             </p>
           </div>

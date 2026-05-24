@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ExternalLink, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { t } from '../../utils/translations';
+import ApplySchemeModal from './ApplySchemeModal';
 
 const CATEGORY_COLORS = {
   agriculture: 'bg-green-100 text-green-800 border-green-200',
@@ -28,6 +29,7 @@ const CATEGORY_EMOJI = {
 export default function SchemeCard({ scheme }) {
   const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   const categoryStyle =
     CATEGORY_COLORS[scheme.category] || 'bg-gray-100 text-gray-800 border-gray-200';
@@ -187,18 +189,34 @@ export default function SchemeCard({ scheme }) {
           )}
         </button>
 
-        {scheme.officialLink && (
-          <a
-            href={scheme.officialLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-sm text-saffron-500 hover:text-saffron-600 font-medium"
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowApplyModal(true)}
+            className="flex items-center gap-1.5 text-xs font-bold text-primary-700 hover:text-primary-800 bg-primary-50 px-3.5 py-2 rounded-xl border border-primary-200 transition-colors active:scale-95"
           >
-            {t('applyNow', language)}
-            <ExternalLink size={13} />
-          </a>
-        )}
+            Apply Online
+          </button>
+          {scheme.officialLink && (
+            <a
+              href={scheme.officialLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-sm text-saffron-500 hover:text-saffron-600 font-medium"
+            >
+              {t('applyNow', language)}
+              <ExternalLink size={13} />
+            </a>
+          )}
+        </div>
       </div>
+
+      {showApplyModal && (
+        <ApplySchemeModal
+          scheme={scheme}
+          onClose={() => setShowApplyModal(false)}
+        />
+      )}
     </div>
   );
 }
+

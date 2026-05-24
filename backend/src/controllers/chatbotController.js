@@ -1,4 +1,6 @@
 const { callAI } = require('../services/aiService');
+const jwt = require('jsonwebtoken');
+const store = require('../data/memoryStore');
 
 /**
  * POST /api/chatbot/message
@@ -28,6 +30,41 @@ const sendMessage = async (req, res, next) => {
     ];
 
     const aiResponse = await callAI(messages, lang);
+
+    // ── Optional User Chat History Saving ───────────────────────────
+    let userId = null;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'govai_secret');
+        userId = decoded.id;
+      } catch (err) {
+        // Ignore token errors and treat as guest chat
+      }
+    }
+
+    if (userId) {
+      if (global.useMemoryStore) {
+        let existing = store.getChatHistory(userId);
+        let msgs = existing ? existing.messages : [];
+        msgs.push({ role: 'user', content: message.trim(), timestamp: new Date() });
+        msgs.push({ role: 'assistant', content: aiResponse, timestamp: new Date() });
+        store.saveChatHistory(userId, msgs);
+      } else {
+        const ChatHistory = require('../models/ChatHistory');
+        let existing = await ChatHistory.findOne({ userId });
+        let msgs = existing ? [...existing.messages] : [];
+        msgs.push({ role: 'user', content: message.trim(), timestamp: new Date() });
+        msgs.push({ role: 'assistant', content: aiResponse, timestamp: new Date() });
+
+        if (existing) {
+          existing.messages = msgs;
+          await existing.save();
+        } else {
+          await ChatHistory.create({ userId, messages: msgs });
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -82,4 +119,59 @@ const getSuggestions = async (req, res) => {
   });
 };
 
-module.exports = { sendMessage, getSuggestions };
+/**
+ * GET /api/chatbot/history
+ * Fetch chat history for logged in user
+ */
+const getChatHistory = async (req, res, next) => {
+  try {
+    const userId = req.user._id || req.user.userId;
+    let history = null;
+
+    if (global.useMemoryStore) {
+      history = store.getChatHistory(userId);
+    } else {
+      const ChatHistory = require('../models/ChatHistory');
+      history = await ChatHistory.findOne({ userId });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: history ? history.messages : [],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/chatbot/history
+ * Clear chat history for logged in user
+ */
+const deleteChatHistory = async (req, res, next) => {
+  try {
+    const userId = req.user._id || req.user.userId;
+
+    if (global.useMemoryStore) {
+      store.deleteChatHistory(userId);
+    } else {
+      const ChatHistory = require('../models/ChatHistory');
+      await ChatHistory.deleteOne({ userId });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Chat history cleared successfully.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  sendMessage,
+  getSuggestions,
+  getChatHistory,
+  deleteChatHistory,
+};
+

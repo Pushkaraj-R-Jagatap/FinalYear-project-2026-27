@@ -13,14 +13,14 @@ export default function ChatbotPage() {
   const { language, changeLanguage } = useLanguage();
 
   return (
-    <div className="flex flex-col bg-slate-100" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="flex flex-col bg-transparent" style={{ height: 'calc(100vh - 64px)' }}>
       {/* Page Header */}
       <div className="px-4 sm:px-6 py-6">
-        <div className="max-w-5xl mx-auto scheme-shell overflow-hidden">
-          <div className="scheme-soft-header px-5 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto glass-card overflow-hidden">
+          <div className="bg-white/50 border-b border-white/40 px-5 py-4 flex items-center justify-between backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#f5d67a] via-[#d9b14a] to-[#a77c1b] flex items-center justify-center shadow-sm">
-              <Bot size={20} className="text-primary-800" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 to-indigo-600 flex items-center justify-center shadow-lg">
+              <Bot size={20} className="text-white" />
             </div>
             <div>
               <h1 className="font-bold text-primary-900">SchemeAI Assistant</h1>
@@ -50,7 +50,7 @@ export default function ChatbotPage() {
       </div>
 
       {/* Chatbot component */}
-      <div className="flex-1 overflow-hidden px-4 sm:px-6 pb-6">
+      <div className="flex-1 overflow-hidden px-8 sm:px-6 pb-6">
         <div className="max-w-5xl mx-auto scheme-shell h-full overflow-hidden">
         <Chatbot />
         </div>

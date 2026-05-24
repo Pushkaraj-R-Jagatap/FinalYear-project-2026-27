@@ -62,11 +62,13 @@ app.get('/health', (req, res) => {
 });
 
 // ── API Routes ───────────────────────────────────────
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/schemes', schemeRoutes);
 app.use('/api/fraud', fraudRoutes);
 app.use('/api/applications', require('./routes/fraud')); // submitApplication lives here
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', require('./routes/notifications'));
 
 // ── 404 handler ──────────────────────────────────────
 app.use((req, res) => {

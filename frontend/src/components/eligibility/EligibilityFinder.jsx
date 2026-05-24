@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Loader2, User, IndianRupee, Briefcase, MapPin, ChevronRight } from 'lucide-react';
+import { Search, Loader2, User, IndianRupee, Briefcase, MapPin, ChevronRight, GraduationCap, Users2 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { t } from '../../utils/translations';
 import { schemesAPI } from '../../services/api';
@@ -40,6 +40,24 @@ const INCOME_RANGES = [
   { value: '5000000', label: 'Above ₹18 Lakh' },
 ];
 
+const EDUCATION_LEVELS = [
+  { value: '', label: 'Select Education Level' },
+  { value: 'below-10th', label: 'Below 10th Pass' },
+  { value: '10th-pass', label: '10th Pass' },
+  { value: '12th-pass', label: '12th Pass / Intermediate' },
+  { value: 'graduate', label: 'Graduate' },
+  { value: 'post-graduate', label: 'Post Graduate & Above' },
+];
+
+const SOCIAL_CATEGORIES = [
+  { value: '', label: 'Select Category (Social)' },
+  { value: 'general', label: 'General / Unreserved' },
+  { value: 'obc', label: 'OBC (Other Backward Classes)' },
+  { value: 'sc', label: 'SC (Scheduled Caste)' },
+  { value: 'st', label: 'ST (Scheduled Tribe)' },
+  { value: 'ews', label: 'EWS (Economically Weaker Section)' },
+];
+
 export default function EligibilityFinder() {
   const { language } = useLanguage();
   const [form, setForm] = useState({
@@ -48,6 +66,8 @@ export default function EligibilityFinder() {
     occupation: '',
     state: '',
     gender: '',
+    education: '',
+    socialCategory: '',
   });
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -82,6 +102,8 @@ export default function EligibilityFinder() {
         occupation: form.occupation || undefined,
         state: form.state || undefined,
         gender: form.gender || undefined,
+        education: form.education || undefined,
+        socialCategory: form.socialCategory || undefined,
       });
       setResults(res.data);
       setSearched(true);
@@ -201,6 +223,44 @@ export default function EligibilityFinder() {
                 ))}
               </select>
             </div>
+
+            {/* Education Level */}
+            <div>
+              <label className="label">
+                <GraduationCap size={13} className="inline mr-1" /> Education Level
+              </label>
+              <select
+                name="education"
+                value={form.education}
+                onChange={handleChange}
+                className="select-field"
+              >
+                {EDUCATION_LEVELS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Social Category */}
+            <div>
+              <label className="label">
+                <Users2 size={13} className="inline mr-1" /> Social Category
+              </label>
+              <select
+                name="socialCategory"
+                value={form.socialCategory}
+                onChange={handleChange}
+                className="select-field"
+              >
+                {SOCIAL_CATEGORIES.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {error && (
@@ -215,7 +275,7 @@ export default function EligibilityFinder() {
             ) : (
               <Search size={16} />
             )}
-            {loading ? '🤖 AI is analysing your profile...' : t('checkEligibility', language)}
+            {loading ? '🤖 AI & Rules Matching is running...' : t('checkEligibility', language)}
           </button>
         </form>
       </div>
@@ -223,6 +283,7 @@ export default function EligibilityFinder() {
       {/* Results */}
       {results && (
         <div className="animate-fade-in">
+
           {/* Summary Banner */}
           <div
             className={`flex items-center gap-3 px-5 py-4 rounded-xl mb-6 shadow-sm

@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { Bot, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bot, User, Volume2, VolumeX } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * Renders a single chat message bubble
@@ -7,7 +8,41 @@ import { Bot, User } from 'lucide-react';
  */
 export default function MessageBubble({ message }) {
   const { role, content, timestamp } = message;
+  const { language } = useLanguage();
   const isUser = role === 'user';
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Stop speaking when component unmounts
+  useEffect(() => {
+    return () => {
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [isSpeaking]);
+
+  // Handle Text to Speech synthesis
+  const handleSpeak = () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    } else {
+      window.speechSynthesis.cancel(); // cancel any ongoing speech
+      const textToSpeak = content.replace(/\*\*|•|\*|-/g, ''); // strip formatting
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+      // Match voices/language codes
+      if (language === 'hi') utterance.lang = 'hi-IN';
+      else if (language === 'mr') utterance.lang = 'mr-IN';
+      else utterance.lang = 'en-IN';
+
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      setIsSpeaking(true);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   // Simple markdown-like rendering for AI responses
   const formatContent = (text) => {
@@ -58,12 +93,25 @@ export default function MessageBubble({ message }) {
 
       {/* Bubble */}
       <div className={`max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-        <div
-          className={isUser ? 'chat-bubble-user' : 'chat-bubble-ai ai-response'}
-          dangerouslySetInnerHTML={{
-            __html: formatContent(content),
-          }}
-        />
+        <div className="relative group/bubble">
+          <div
+            className={isUser ? 'chat-bubble-user' : 'chat-bubble-ai ai-response pr-8'}
+            dangerouslySetInnerHTML={{
+              __html: formatContent(content),
+            }}
+          />
+          
+          {/* TTS Speaker Toggle Button for AI responses */}
+          {!isUser && content && (
+            <button
+              onClick={handleSpeak}
+              className="absolute right-2 bottom-2 text-slate-400 hover:text-primary-700 transition-colors p-1 rounded-lg hover:bg-slate-100"
+              title={isSpeaking ? 'Stop Reading' : 'Read Aloud'}
+            >
+              {isSpeaking ? <VolumeX size={14} className="text-red-500" /> : <Volume2 size={14} />}
+            </button>
+          )}
+        </div>
         {timeStr && (
           <span className="text-xs text-slate-400 px-1">{timeStr}</span>
         )}
@@ -71,6 +119,7 @@ export default function MessageBubble({ message }) {
     </div>
   );
 }
+
 
 /**
  * Animated typing indicator (three bouncing dots)

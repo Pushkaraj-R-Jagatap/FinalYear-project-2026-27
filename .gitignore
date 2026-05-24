@@ -20,3 +20,10 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+
+
+.env
+.env.*
+!.env.example
+node_modules/
