@@ -237,13 +237,7 @@ Navigate to `http://localhost:5173/admin`
 
 ---
 
-## 🏆 Hackathon Info
 
-**Project:** Multilingual AI Support for Government Scheme Awareness & Fraud Detection  
-**Category:** GovTech / AI / Social Impact  
-**Team:** Ranjit  
-
----
 
 ## 📄 License
 
