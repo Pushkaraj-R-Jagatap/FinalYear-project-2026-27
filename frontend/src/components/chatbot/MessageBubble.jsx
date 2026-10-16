@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bot, User, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import FeedbackWidget from '../common/FeedbackWidget';
 
 /**
  * Renders a single chat message bubble
@@ -112,6 +113,14 @@ export default function MessageBubble({ message }) {
             </button>
           )}
         </div>
+        {message.role === 'assistant' && (
+          <FeedbackWidget
+            targetType="chatbot"
+            targetId={message.id || message.timestamp || 'session'}
+            compact={true}
+            label="Was this helpful?"
+          />
+        )}
         {timeStr && (
           <span className="text-xs text-slate-400 px-1">{timeStr}</span>
         )}

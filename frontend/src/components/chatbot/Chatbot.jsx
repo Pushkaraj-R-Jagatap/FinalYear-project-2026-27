@@ -6,6 +6,15 @@ import { chatbotAPI } from '../../services/api';
 import MessageBubble, { TypingIndicator } from './MessageBubble';
 import axios from 'axios';
 
+const STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Delhi', 'Jammu & Kashmir', 'Ladakh',
+];
+
 export default function Chatbot() {
   const { language } = useLanguage();
   const [messages, setMessages] = useState([]);
@@ -14,8 +23,14 @@ export default function Chatbot() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [isListening, setIsListening] = useState(false);
+  const [userState, setUserState] = useState(() => sessionStorage.getItem('chatbot_state') || '');
+  const [userDistrict, setUserDistrict] = useState(() => sessionStorage.getItem('chatbot_district') || '');
+  const [showRegionSettings, setShowRegionSettings] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  const handleStateChange = (val) => { setUserState(val); sessionStorage.setItem('chatbot_state', val); };
+  const handleDistrictChange = (val) => { setUserDistrict(val); sessionStorage.setItem('chatbot_district', val); };
 
   const userToken = localStorage.getItem('userToken');
 
@@ -146,7 +161,13 @@ export default function Chatbot() {
       // Add Authorization header inline if user is logged in
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL || '/api'}/chatbot/message`,
-        { message: text, language, conversationHistory: history.slice(0, -1) },
+        {
+          message: text,
+          language,
+          conversationHistory: history.slice(0, -1),
+          userState,
+          userDistrict,
+        },
         {
           headers: userToken ? { Authorization: `Bearer ${userToken}` } : {},
         }
@@ -210,6 +231,40 @@ export default function Chatbot() {
 
   return (
     <div className="flex flex-col h-full bg-[#f8fbff]" style={{ minHeight: 'calc(100vh - 130px)' }}>
+      {/* Chatbot Toolbar / Header */}
+      <div className="px-4 py-2 bg-white/70 border-b border-slate-200/60 flex items-center justify-between">
+        <span className="text-xs font-medium text-slate-500">SchemeAI Chat</span>
+        <button
+          onClick={() => setShowRegionSettings(!showRegionSettings)}
+          className="text-xs text-slate-400 hover:text-primary-600 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
+          title="Set your location for region-specific scheme info"
+        >
+          📍 {userState || 'Set Location'}
+        </button>
+      </div>
+
+      {showRegionSettings && (
+        <div className="px-4 py-3 bg-blue-50 border-b border-blue-100 flex flex-wrap gap-3 items-center">
+          <span className="text-xs font-semibold text-blue-700">📍 Your Location (for region-specific answers):</span>
+          <select
+            value={userState}
+            onChange={(e) => handleStateChange(e.target.value)}
+            className="text-xs border border-blue-200 rounded-lg px-2 py-1 bg-white text-slate-700"
+          >
+            <option value="">All India</option>
+            {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <input
+            type="text"
+            value={userDistrict}
+            onChange={(e) => handleDistrictChange(e.target.value)}
+            placeholder="District (optional)"
+            className="text-xs border border-blue-200 rounded-lg px-2 py-1 bg-white text-slate-700 w-36"
+          />
+          <button onClick={() => setShowRegionSettings(false)} className="text-xs text-blue-500 hover:underline">Done</button>
+        </div>
+      )}
+
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl mx-auto w-full">
         {messages.map((msg, idx) => (

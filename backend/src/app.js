@@ -9,6 +9,8 @@ const chatbotRoutes = require('./routes/chatbot');
 const schemeRoutes = require('./routes/schemes');
 const fraudRoutes = require('./routes/fraud');
 const adminRoutes = require('./routes/admin');
+const feedbackRoutes = require('./routes/feedback');
+const ocrRoutes = require('./routes/ocr');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -43,7 +45,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/chatbot/', chatbotLimiter);
 
 // ── Body parsing ─────────────────────────────────────
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '50kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── Logging ──────────────────────────────────────────
@@ -69,6 +71,8 @@ app.use('/api/fraud', fraudRoutes);
 app.use('/api/applications', require('./routes/fraud')); // submitApplication lives here
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/ocr', ocrRoutes);
 
 // ── 404 handler ──────────────────────────────────────
 app.use((req, res) => {

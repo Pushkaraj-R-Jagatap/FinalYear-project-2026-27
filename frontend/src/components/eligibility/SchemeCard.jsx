@@ -3,6 +3,7 @@ import { ExternalLink, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext';
 import { t } from '../../utils/translations';
 import ApplySchemeModal from './ApplySchemeModal';
+import FeedbackWidget from '../common/FeedbackWidget';
 
 const CATEGORY_COLORS = {
   agriculture: 'bg-green-100 text-green-800 border-green-200',
@@ -216,6 +217,13 @@ export default function SchemeCard({ scheme }) {
           onClose={() => setShowApplyModal(false)}
         />
       )}
+
+      <FeedbackWidget
+        targetType="scheme"
+        targetId={scheme._id || scheme.name}
+        compact={false}
+        label="Was this recommendation useful?"
+      />
     </div>
   );
 }
