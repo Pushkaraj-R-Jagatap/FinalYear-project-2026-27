@@ -231,6 +231,7 @@ const store = {
   chatHistories: [],
   notifications: [],
   fraudReports: [],
+  feedbacks: [],
 
   // ── User helpers ──────────────────────────────────────────────
   getUserById(id) {
@@ -331,6 +332,44 @@ const store = {
     };
     this.fraudReports.push(newReport);
     return newReport;
+  },
+
+  // ── Feedback helpers ──────────────────────────────────────────
+  addFeedback(feedback) {
+    const newFeedback = {
+      _id: `fb-${genId()}`,
+      feedbackId: `FB-${genId()}`,
+      targetType: feedback.targetType,
+      targetId: feedback.targetId || 'general',
+      rating: feedback.rating,
+      comment: feedback.comment || '',
+      helpful: feedback.helpful !== undefined ? feedback.helpful : null,
+      userId: feedback.userId || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.feedbacks.push(newFeedback);
+    return newFeedback;
+  },
+
+  getFeedbacks(filter = {}) {
+    let list = this.feedbacks;
+    if (filter.targetType) list = list.filter(f => f.targetType === filter.targetType);
+    if (filter.rating) list = list.filter(f => f.rating === filter.rating);
+    if (filter.helpful !== undefined) list = list.filter(f => f.helpful === filter.helpful);
+    return [...list].sort((a, b) => b.createdAt - a.createdAt);
+  },
+
+  getFeedbackStats() {
+    const total = this.feedbacks.length;
+    if (total === 0) return { totalCount: 0, avgRating: 0, helpfulPercent: 0, byTargetType: { chatbot: 0, scheme: 0, fraud: 0 }, lowRatedCount: 0 };
+    const avgRating = parseFloat((this.feedbacks.reduce((s, f) => s + f.rating, 0) / total).toFixed(2));
+    const helpfulCount = this.feedbacks.filter(f => f.helpful === true).length;
+    const helpfulPercent = parseFloat(((helpfulCount / total) * 100).toFixed(1));
+    const byTargetType = { chatbot: 0, scheme: 0, fraud: 0 };
+    this.feedbacks.forEach(f => { if (byTargetType[f.targetType] !== undefined) byTargetType[f.targetType]++; });
+    const lowRatedCount = this.feedbacks.filter(f => f.rating <= 2).length;
+    return { totalCount: total, avgRating, helpfulPercent, byTargetType, lowRatedCount };
   },
 
   // ── Scheme helpers ────────────────────────────────────────────

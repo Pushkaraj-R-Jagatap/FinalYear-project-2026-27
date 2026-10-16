@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import {
   BarChart3, LogOut, RefreshCw, FileText, AlertTriangle, Shield, Layers,
   Eye, EyeOff, Loader2, ChevronRight,
@@ -128,6 +129,20 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [error, setError] = useState('');
+  const [feedbackStats, setFeedbackStats] = useState(null);
+
+  useEffect(() => {
+    const fetchFeedbackStats = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || '/api';
+        const res = await axios.get(`${API_URL}/feedback/stats`);
+        setFeedbackStats(res.data.data);
+      } catch (err) {
+        console.error('Failed to load feedback stats:', err.message);
+      }
+    };
+    fetchFeedbackStats();
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!admin) return;
@@ -270,6 +285,44 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
+
+        {/* Feedback Overview */}
+        {feedbackStats && (
+          <div className="card mb-8">
+            <h3 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+              ⭐ Feedback Overview
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-black text-slate-800">{feedbackStats.avgRating}<span className="text-sm font-normal text-slate-400">/5</span></p>
+                <p className="text-xs text-slate-500 mt-1">Avg Rating</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-black text-slate-800">{feedbackStats.totalCount}</p>
+                <p className="text-xs text-slate-500 mt-1">Total Responses</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-black text-green-600">{feedbackStats.helpfulPercent}%</p>
+                <p className="text-xs text-slate-500 mt-1">Found Helpful</p>
+              </div>
+              <div className="text-center">
+                <p className={`text-2xl font-black ${feedbackStats.lowRatedCount > 5 ? 'text-red-500' : 'text-slate-800'}`}>
+                  {feedbackStats.lowRatedCount}
+                  {feedbackStats.lowRatedCount > 5 && ' ⚠️'}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Low Ratings</p>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <p className="text-xs font-semibold text-slate-500 mb-2">By Feature</p>
+              <div className="flex gap-3 text-xs">
+                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">💬 Chatbot: {feedbackStats.byTargetType?.chatbot ?? 0}</span>
+                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">📋 Schemes: {feedbackStats.byTargetType?.scheme ?? 0}</span>
+                <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full">🛡️ Fraud: {feedbackStats.byTargetType?.fraud ?? 0}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Tabs ─────────────────────────────────────────── */}
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">

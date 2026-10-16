@@ -34,8 +34,8 @@ api.interceptors.response.use(
 
 // ── Chatbot API ───────────────────────────────────────
 export const chatbotAPI = {
-  sendMessage: (message, language, conversationHistory = []) =>
-    api.post('/chatbot/message', { message, language, conversationHistory }),
+  sendMessage: (message, language, conversationHistory = [], userState, userDistrict) =>
+    api.post('/chatbot/message', { message, language, conversationHistory, userState, userDistrict }),
 
   getSuggestions: (language = 'en') =>
     api.get('/chatbot/suggestions', { params: { language } }),

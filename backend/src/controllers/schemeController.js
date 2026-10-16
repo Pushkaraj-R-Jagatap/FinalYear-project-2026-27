@@ -77,7 +77,13 @@ const getSchemeById = async (req, res, next) => {
  */
 const findEligibleSchemes = async (req, res, next) => {
   try {
-    const { age, income, occupation, state, gender, education, socialCategory } = req.body;
+    const {
+      age, income, occupation, state, gender, education, socialCategory,
+      // NEW FIELDS:
+      district, maritalStatus, disability, disabilityType,
+      bplCard, landOwnership, hasCasteCertificate, religion,
+      rationCardType, isMinority, numberOfDependents, annualHouseholdIncome,
+    } = req.body;
 
     if (!age || !income) {
       return res.status(400).json({
@@ -86,8 +92,31 @@ const findEligibleSchemes = async (req, res, next) => {
       });
     }
 
-    const ageNum = parseInt(age);
-    const incomeNum = parseInt(income);
+    const profile = {
+      age: parseInt(age),
+      income: parseInt(income),
+      occupation: occupation || null,
+      state: state || null,
+      gender: gender || null,
+      education: education || null,
+      socialCategory: socialCategory || null,
+      // NEW:
+      district: district || null,
+      maritalStatus: maritalStatus || null,
+      disability: disability || false,
+      disabilityType: disabilityType || null,
+      bplCard: bplCard || false,
+      landOwnership: landOwnership || null,
+      hasCasteCertificate: hasCasteCertificate || false,
+      religion: religion || null,
+      rationCardType: rationCardType || null,
+      isMinority: isMinority || false,
+      numberOfDependents: numberOfDependents ? parseInt(numberOfDependents) : null,
+      annualHouseholdIncome: annualHouseholdIncome ? parseInt(annualHouseholdIncome) : null,
+    };
+
+    const ageNum = profile.age;
+    const incomeNum = profile.income;
 
     // ── Rule-Based Local Filtering ────────────────────────────────
     let databaseSchemes = [];
@@ -98,7 +127,7 @@ const findEligibleSchemes = async (req, res, next) => {
       databaseSchemes = await Scheme.find({ isActive: true });
     }
 
-    const ruleMatchedSchemes = databaseSchemes.filter(scheme => {
+    let ruleMatchedSchemes = databaseSchemes.filter(scheme => {
       const elig = scheme.eligibility;
       if (!elig) return true;
 
@@ -137,6 +166,17 @@ const findEligibleSchemes = async (req, res, next) => {
       return true;
     });
 
+    // Boost scores for special profile attributes
+    ruleMatchedSchemes = ruleMatchedSchemes.map(scheme => {
+      let boost = 0;
+      const tags = (scheme.tags || []).map(t => t.toLowerCase());
+      if (profile.disability && tags.some(t => ['disability','divyang','handicap','disabled'].includes(t))) boost += 20;
+      if (profile.bplCard && tags.some(t => ['bpl','poverty','ration','poor'].includes(t))) boost += 25;
+      if (profile.maritalStatus === 'widow' && tags.some(t => ['widow','mahila','women','woman'].includes(t))) boost += 20;
+      if (profile.isMinority && tags.some(t => ['minority','minorities'].includes(t))) boost += 15;
+      return { ...scheme, _boost: boost };
+    }).sort((a, b) => (b._boost || 0) - (a._boost || 0));
+
     const ruleMatchedFormatted = ruleMatchedSchemes.map(s => {
       const obj = typeof s.toObject === 'function' ? s.toObject() : s;
       return {
@@ -147,58 +187,66 @@ const findEligibleSchemes = async (req, res, next) => {
     });
 
     // ── AI-Powered Recommendations (Groq Llama 3) ─────────────────
-    const prompt = `You are an expert on Indian Government Schemes. A citizen has provided their profile. Based on these details, identify ALL government schemes they are eligible for.
+    const systemPrompt = `You are GovAI, an expert on Indian government welfare schemes.
+The citizen is from ${profile.state || 'India'}${profile.district ? `, ${profile.district} district` : ''}.
 
-User Profile:
-- Age: ${ageNum} years
-- Annual Income: ₹${incomeNum.toLocaleString('en-IN')} per year
-- Occupation: ${occupation || 'Not specified'}
-- State: ${state || 'All India'}
-- Gender: ${gender || 'Not specified'}
-- Education: ${education || 'Not specified'}
-- Social Category: ${socialCategory || 'Not specified'}
+Citizen Profile:
+- Age: ${profile.age}, Income: ₹${profile.income}/yr
+- Occupation: ${profile.occupation || 'not specified'}, Gender: ${profile.gender || 'not specified'}
+- Social Category: ${profile.socialCategory || 'general'}, Education: ${profile.education || 'not specified'}
+- BPL Card: ${profile.bplCard ? 'Yes' : 'No'}, Ration Card: ${profile.rationCardType || 'none'}
+- Disability: ${profile.disability ? (profile.disabilityType || 'Yes') : 'No'}
+- Marital Status: ${profile.maritalStatus || 'not specified'}
+- Religion: ${profile.religion || 'not specified'}, Minority: ${profile.isMinority ? 'Yes' : 'No'}
+- Land Ownership: ${profile.landOwnership || 'unknown'}
+- Dependents: ${profile.numberOfDependents !== null ? profile.numberOfDependents : 'not specified'}
+- Household Income: ${profile.annualHouseholdIncome ? '₹' + profile.annualHouseholdIncome.toLocaleString('en-IN') : 'same as personal'}
 
-Return ONLY a valid JSON array (no markdown, no code blocks, no explanation — raw JSON only) of eligible schemes. Each scheme object must have exactly these fields:
-{
-  "name": "Full official scheme name",
-  "shortName": "Short acronym",
-  "category": "one of: agriculture / health / housing / education / financial / women / pension / entrepreneur",
-  "description": "2–3 sentence description of what the scheme offers",
-  "benefits": ["benefit 1", "benefit 2", "benefit 3"],
-  "documentsRequired": ["Aadhaar Card", "Bank Passbook"],
-  "applicationProcess": ["Step 1: ...", "Step 2: ...", "Step 3: ..."],
-  "officialLink": "https://official-url.gov.in",
-  "matchReasons": ["Specific reason this user qualifies based on their profile"],
-  "ministry": "Ministry of ...",
-  "launchYear": "YYYY"
-}
+These central government schemes exist: ${ruleMatchedSchemes.map(s => s.name).join(', ')}.
 
-Include 6 to 12 relevant schemes. Be precise and specific about matchReasons using the user's actual profile.`;
+Task:
+1. Return a JSON array of ALL schemes this citizen qualifies for (from the list above AND any well-known state-specific schemes for ${profile.state || 'their state'}).
+2. For state-specific schemes NOT in the list, add them with ai_suggested: true.
+3. Each item: { name, shortName, category, description, benefits: [], documentsRequired: [], applicationProcess: [], officialLink, matchReasons: [], ministry, launchYear, ai_suggested: false }
+4. Also return a regionInsight string: 1-2 sentences about scheme availability specifically for ${profile.state || 'this region'}${profile.district ? ` / ${profile.district}` : ''}.
+
+Return format:
+{ "schemes": [...], "regionInsight": "..." }
+
+Return ONLY raw JSON, no markdown, no code blocks.`;
 
     let aiSchemes = [];
+    let regionInsight = '';
     try {
-      const aiMessages = [{ role: 'user', content: prompt }];
+      const aiMessages = [{ role: 'user', content: systemPrompt }];
       const aiResponse = await callAI(aiMessages, 'en');
 
-      const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        aiSchemes = JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]);
+        aiSchemes = parsed.schemes || (Array.isArray(parsed) ? parsed : []);
+        regionInsight = parsed.regionInsight || '';
       } else {
         aiSchemes = JSON.parse(aiResponse);
       }
     } catch (parseErr) {
       console.warn('AI eligibility finder failed, falling back to database rule-based matches:', parseErr.message);
+      try {
+        aiSchemes = JSON.parse(aiResponse);
+      } catch (e2) {
+        aiSchemes = [];
+      }
     }
 
     // Merge & Deduplicate
     const mergedSchemes = [...ruleMatchedFormatted];
-    
+
     aiSchemes.forEach((aiScheme, idx) => {
       // Check if already in ruleMatched list by shortName or name
       const alreadyMatched = ruleMatchedFormatted.some(
         s => (s.shortName && s.shortName.toLowerCase() === (aiScheme.shortName || '').toLowerCase()) ||
-             s.name.toLowerCase().includes(aiScheme.name.toLowerCase()) ||
-             aiScheme.name.toLowerCase().includes(s.name.toLowerCase())
+             (aiScheme.name && s.name.toLowerCase().includes(aiScheme.name.toLowerCase())) ||
+             (aiScheme.name && aiScheme.name.toLowerCase().includes(s.name.toLowerCase()))
       );
 
       if (!alreadyMatched) {
@@ -213,9 +261,10 @@ Include 6 to 12 relevant schemes. Be precise and specific about matchReasons usi
     res.status(200).json({
       success: true,
       count: mergedSchemes.length,
-      profile: { age: ageNum, income: incomeNum, occupation, state, gender, education, socialCategory },
+      profile,
       data: mergedSchemes,
-      aiPowered: aiSchemes.length > 0,
+      aiPowered: true,
+      regionInsight,
     });
   } catch (error) {
     next(error);

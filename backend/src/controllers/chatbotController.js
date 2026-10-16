@@ -8,7 +8,7 @@ const store = require('../data/memoryStore');
  */
 const sendMessage = async (req, res, next) => {
   try {
-    const { message, language = 'en', conversationHistory = [] } = req.body;
+    const { message, language = 'en', sessionId, userState, userDistrict, conversationHistory = [] } = req.body;
 
     if (!message || message.trim() === '') {
       return res.status(400).json({
@@ -21,10 +21,15 @@ const sendMessage = async (req, res, next) => {
     const supportedLanguages = ['en', 'hi', 'mr'];
     const lang = supportedLanguages.includes(language) ? language : 'en';
 
+    const regionContext = userState
+      ? `\nThe citizen is from ${userState}${userDistrict ? `, ${userDistrict} district` : ''}. Prioritize schemes available in ${userState} and mention state-specific portals and helpline numbers for ${userState} when relevant.`
+      : '';
+
     // Build conversation messages for the AI
     // Limit to last 10 messages to avoid token overflow
     const recentHistory = conversationHistory.slice(-10);
     const messages = [
+      ...(regionContext ? [{ role: 'system', content: regionContext }] : []),
       ...recentHistory,
       { role: 'user', content: message.trim() },
     ];

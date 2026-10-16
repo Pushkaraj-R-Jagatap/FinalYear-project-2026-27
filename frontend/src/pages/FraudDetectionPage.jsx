@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ShieldAlert, ShieldCheck, HelpCircle, Loader2, ArrowRight, Link, MessageSquare, AlertTriangle, AlertCircle } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, HelpCircle, Loader2, ArrowRight, Link, MessageSquare, AlertTriangle, AlertCircle, Upload, Image, FileText, X } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../utils/translations';
 import axios from 'axios';
+import FeedbackWidget from '../components/common/FeedbackWidget';
 
 export default function FraudDetectionPage() {
   const { language } = useLanguage();
@@ -15,6 +16,77 @@ export default function FraudDetectionPage() {
   const [reports, setReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
   const [error, setError] = useState('');
+
+  const [inputMode, setInputMode] = useState('text'); // 'text' | 'image'
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [extractedText, setExtractedText] = useState('');
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [ocrError, setOcrError] = useState('');
+
+  const handleImageSelect = (file) => {
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setOcrError('Please upload a JPG, PNG, WebP or GIF image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setOcrError('Image must be under 5MB.');
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setExtractedText('');
+    setOcrError('');
+    setResult(null);
+  };
+
+  const handleExtractText = async () => {
+    if (!imageFile) return;
+    setOcrLoading(true);
+    setOcrError('');
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
+      const res = await axios.post(`${API_URL}/ocr/extract`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setExtractedText(res.data.data.extractedText);
+    } catch (err) {
+      setOcrError(err.response?.data?.error || 'OCR extraction failed. Try a clearer image.');
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
+  const handleAnalyzeImage = async () => {
+    if (!imageFile) return;
+    setAnalyzeLoading(true);
+    setOcrError('');
+    setResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
+      const res = await axios.post(`${API_URL}/ocr/analyze`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setResult(res.data.data);
+      addToast(
+        res.data.data.isScam ? '🖼️ Scam Image Detected!' : '✅ Image Check Complete',
+        res.data.data.isScam ? 'This image was flagged as suspicious.' : 'No scam indicators found in this image.',
+        res.data.data.isScam ? 'fraud_alert' : 'success'
+      );
+      fetchReports();
+    } catch (err) {
+      setOcrError(err.response?.data?.error || 'Image analysis failed. Please try again.');
+    } finally {
+      setAnalyzeLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchReports();
@@ -87,54 +159,160 @@ export default function FraudDetectionPage() {
               🔍 Fraud Analysis Scanner
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="label">
-                  <Link size={13} className="inline mr-1 text-slate-400" /> Suspicious URL Link
-                </label>
-                <input
-                  type="text"
-                  value={form.suspiciousLink}
-                  onChange={(e) => {
-                    setForm((p) => ({ ...p, suspiciousLink: e.target.value }));
-                    setError('');
-                  }}
-                  placeholder="e.g. http://pm-kisan-awas-money.xyz/apply"
-                  className="input-field font-mono text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="label">
-                  <MessageSquare size={13} className="inline mr-1 text-slate-400" /> SMS Text, WhatsApp Message or Ad Copy
-                </label>
-                <textarea
-                  value={form.scamMessage}
-                  onChange={(e) => {
-                    setForm((p) => ({ ...p, scamMessage: e.target.value }));
-                    setError('');
-                  }}
-                  placeholder="Paste the WhatsApp scam message or scheme offer advertisement details here..."
-                  rows={4}
-                  className="input-field text-sm"
-                />
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-4 py-2.5">
-                  ⚠️ {error}
-                </div>
-              )}
-
+            {/* Tab Switcher */}
+            <div className="flex gap-2 mb-5 p-1 bg-slate-100 rounded-xl">
               <button
-                type="submit"
-                className="btn-primary w-full flex items-center justify-center gap-2 py-3.5 text-base"
-                disabled={loading}
+                type="button"
+                onClick={() => { setInputMode('text'); setResult(null); setError(''); }}
+                className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
+                  inputMode === 'text' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
               >
-                {loading ? <Loader2 size={18} className="animate-spin" /> : <ShieldAlert size={18} />}
-                {loading ? 'AI & Pattern Analysis Running...' : 'Verify Government Scheme Legitimacy'}
+                <FileText size={14} /> Text / URL
               </button>
-            </form>
+              <button
+                type="button"
+                onClick={() => { setInputMode('image'); setResult(null); setError(''); }}
+                className={`flex items-center gap-2 flex-1 justify-center py-2 px-4 rounded-lg text-sm font-semibold transition-colors ${
+                  inputMode === 'image' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Image size={14} /> Image / Screenshot
+              </button>
+            </div>
+
+            {/* TEXT MODE — existing form */}
+            {inputMode === 'text' && (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="label">
+                    <Link size={13} className="inline mr-1 text-slate-400" /> Suspicious URL Link
+                  </label>
+                  <input
+                    type="text"
+                    value={form.suspiciousLink}
+                    onChange={(e) => {
+                      setForm((p) => ({ ...p, suspiciousLink: e.target.value }));
+                      setError('');
+                    }}
+                    placeholder="e.g. http://pm-kisan-awas-money.xyz/apply"
+                    className="input-field font-mono text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="label">
+                    <MessageSquare size={13} className="inline mr-1 text-slate-400" /> SMS Text, WhatsApp Message or Ad Copy
+                  </label>
+                  <textarea
+                    value={form.scamMessage}
+                    onChange={(e) => {
+                      setForm((p) => ({ ...p, scamMessage: e.target.value }));
+                      setError('');
+                    }}
+                    placeholder="Paste the WhatsApp scam message or scheme offer advertisement details here..."
+                    rows={4}
+                    className="input-field text-sm"
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-4 py-2.5">
+                    ⚠️ {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="btn-primary w-full flex items-center justify-center gap-2 py-3.5 text-base"
+                  disabled={loading}
+                >
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <ShieldAlert size={18} />}
+                  {loading ? 'AI & Pattern Analysis Running...' : 'Verify Government Scheme Legitimacy'}
+                </button>
+              </form>
+            )}
+
+            {/* IMAGE MODE — new upload section */}
+            {inputMode === 'image' && (
+              <div className="space-y-4">
+                {/* Drop Zone */}
+                <div
+                  onClick={() => document.getElementById('image-upload-input').click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); handleImageSelect(e.dataTransfer.files[0]); }}
+                  className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer hover:border-primary-400 hover:bg-slate-50 transition-colors"
+                >
+                  {imagePreview ? (
+                    <div className="space-y-2">
+                      <img src={imagePreview} alt="Preview" className="max-h-48 object-contain mx-auto rounded-xl" />
+                      <p className="text-xs text-slate-500">{imageFile?.name}</p>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setImageFile(null); setImagePreview(null); setExtractedText(''); setResult(null); }}
+                        className="text-xs text-red-500 hover:underline flex items-center gap-1 mx-auto"
+                      >
+                        <X size={11} /> Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <Upload size={32} className="text-slate-400 mx-auto mb-3" />
+                      <p className="text-sm font-semibold text-slate-600">📸 Drop a screenshot here or click to upload</p>
+                      <p className="text-xs text-slate-400 mt-1">JPG, PNG, WebP · Max 5MB</p>
+                    </div>
+                  )}
+                </div>
+                <input
+                  id="image-upload-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => handleImageSelect(e.target.files[0])}
+                />
+
+                {ocrError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-4 py-2.5">
+                    ⚠️ {ocrError}
+                  </div>
+                )}
+
+                {imageFile && (
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleExtractText}
+                      disabled={ocrLoading}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors disabled:opacity-50"
+                    >
+                      {ocrLoading ? <span className="animate-spin">⏳</span> : <FileText size={15} />}
+                      {ocrLoading ? 'Extracting...' : '🔍 Extract Text'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAnalyzeImage}
+                      disabled={analyzeLoading}
+                      className="btn-primary flex items-center gap-2 py-2.5 text-sm disabled:opacity-50"
+                    >
+                      {analyzeLoading ? <span className="animate-spin">⏳</span> : <ShieldAlert size={15} />}
+                      {analyzeLoading ? 'AI Analyzing...' : '🛡️ Analyze for Scam'}
+                    </button>
+                  </div>
+                )}
+
+                {extractedText && (
+                  <div>
+                    <label className="label">📄 Extracted Text from Image</label>
+                    <textarea
+                      readOnly
+                      value={extractedText}
+                      rows={4}
+                      className="input-field text-xs font-mono bg-slate-50"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Results section */}
@@ -203,6 +381,20 @@ export default function FraudDetectionPage() {
                   ))}
                 </div>
               </div>
+
+              {result?.ocrExtracted && result?.extractedText && (
+                <details className="mt-4">
+                  <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-700">📄 View OCR extracted text</summary>
+                  <p className="mt-2 text-xs font-mono text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">{result.extractedText}</p>
+                </details>
+              )}
+
+              <FeedbackWidget
+                targetType="fraud"
+                targetId={result.reportId || 'fraud-result'}
+                compact={false}
+                label="Was this fraud analysis accurate?"
+              />
             </div>
           )}
         </div>

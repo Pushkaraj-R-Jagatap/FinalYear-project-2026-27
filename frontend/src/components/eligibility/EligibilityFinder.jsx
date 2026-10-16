@@ -60,6 +60,7 @@ const SOCIAL_CATEGORIES = [
 
 export default function EligibilityFinder() {
   const { language } = useLanguage();
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState({
     age: '',
     income: '',
@@ -68,6 +69,18 @@ export default function EligibilityFinder() {
     gender: '',
     education: '',
     socialCategory: '',
+    // NEW:
+    district: '',
+    maritalStatus: '',
+    disability: false,
+    disabilityType: '',
+    bplCard: false,
+    rationCardType: '',
+    landOwnership: '',
+    religion: '',
+    isMinority: false,
+    numberOfDependents: '',
+    annualHouseholdIncome: '',
   });
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -77,6 +90,10 @@ export default function EligibilityFinder() {
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setError('');
+  };
+
+  const handleCheckbox = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.checked }));
   };
 
   const handleSubmit = async (e) => {
@@ -104,6 +121,18 @@ export default function EligibilityFinder() {
         gender: form.gender || undefined,
         education: form.education || undefined,
         socialCategory: form.socialCategory || undefined,
+        // NEW:
+        district: form.district || undefined,
+        maritalStatus: form.maritalStatus || undefined,
+        disability: form.disability || undefined,
+        disabilityType: form.disabilityType || undefined,
+        bplCard: form.bplCard || undefined,
+        rationCardType: form.rationCardType || undefined,
+        landOwnership: form.landOwnership || undefined,
+        religion: form.religion || undefined,
+        isMinority: form.isMinority || undefined,
+        numberOfDependents: form.numberOfDependents ? parseInt(form.numberOfDependents) : undefined,
+        annualHouseholdIncome: form.annualHouseholdIncome ? parseInt(form.annualHouseholdIncome) : undefined,
       });
       setResults(res.data);
       setSearched(true);
@@ -263,6 +292,164 @@ export default function EligibilityFinder() {
             </div>
           </div>
 
+          {/* Advanced Profile Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="text-sm text-primary-600 hover:underline flex items-center gap-1 font-medium"
+          >
+            {showAdvanced ? '▲ Hide' : '▼ Show'} Advanced Profile Options
+            <span className="text-xs text-slate-400 font-normal ml-1">(disability, BPL card, religion, etc.)</span>
+          </button>
+
+          {showAdvanced && (
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">🗂️ Advanced Profile — Optional</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {/* District */}
+                <div>
+                  <label className="label">📍 District</label>
+                  <input
+                    type="text"
+                    name="district"
+                    value={form.district}
+                    onChange={handleChange}
+                    placeholder="e.g. Nashik, Patna, Coimbatore"
+                    className="input-field"
+                  />
+                </div>
+
+                {/* Marital Status */}
+                <div>
+                  <label className="label">💍 Marital Status</label>
+                  <select name="maritalStatus" value={form.maritalStatus} onChange={handleChange} className="select-field">
+                    <option value="">Not Specified</option>
+                    <option value="single">Single</option>
+                    <option value="married">Married</option>
+                    <option value="widow">Widowed</option>
+                    <option value="divorced">Divorced</option>
+                  </select>
+                </div>
+
+                {/* Ration Card Type */}
+                <div>
+                  <label className="label">🪪 Ration Card Type</label>
+                  <select name="rationCardType" value={form.rationCardType} onChange={handleChange} className="select-field">
+                    <option value="">Not Applicable</option>
+                    <option value="APL">APL (Above Poverty Line)</option>
+                    <option value="BPL">BPL (Below Poverty Line)</option>
+                    <option value="AAY">AAY (Antyodaya Anna Yojana)</option>
+                  </select>
+                </div>
+
+                {/* Land Ownership */}
+                <div>
+                  <label className="label">🌾 Land Ownership</label>
+                  <select name="landOwnership" value={form.landOwnership} onChange={handleChange} className="select-field">
+                    <option value="">Not Specified</option>
+                    <option value="none">No Land</option>
+                    <option value="small">Small (&lt; 2 acres)</option>
+                    <option value="marginal">Marginal (2–5 acres)</option>
+                    <option value="large">Large (&gt; 5 acres)</option>
+                  </select>
+                </div>
+
+                {/* Religion */}
+                <div>
+                  <label className="label">🛕 Religion</label>
+                  <select name="religion" value={form.religion} onChange={handleChange} className="select-field">
+                    <option value="">Not Specified</option>
+                    <option value="hindu">Hindu</option>
+                    <option value="muslim">Muslim</option>
+                    <option value="christian">Christian</option>
+                    <option value="sikh">Sikh</option>
+                    <option value="buddhist">Buddhist</option>
+                    <option value="jain">Jain</option>
+                    <option value="others">Others</option>
+                  </select>
+                </div>
+
+                {/* Number of Dependents */}
+                <div>
+                  <label className="label">👨‍👩‍👧‍👦 Number of Dependents</label>
+                  <input
+                    type="number"
+                    name="numberOfDependents"
+                    value={form.numberOfDependents}
+                    onChange={handleChange}
+                    placeholder="0"
+                    min="0"
+                    max="20"
+                    className="input-field"
+                  />
+                </div>
+
+                {/* Annual Household Income */}
+                <div>
+                  <label className="label">🏠 Annual Household Income (₹)</label>
+                  <input
+                    type="number"
+                    name="annualHouseholdIncome"
+                    value={form.annualHouseholdIncome}
+                    onChange={handleChange}
+                    placeholder="Total family income in ₹/year"
+                    min="0"
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              {/* Checkboxes row */}
+              <div className="flex flex-wrap gap-4 pt-2">
+                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="disability"
+                    checked={form.disability}
+                    onChange={handleCheckbox}
+                    className="w-4 h-4 rounded text-primary-600"
+                  />
+                  ♿ Person with Disability
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="bplCard"
+                    checked={form.bplCard}
+                    onChange={handleCheckbox}
+                    className="w-4 h-4 rounded text-primary-600"
+                  />
+                  🪪 BPL / Antyodaya Card Holder
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="isMinority"
+                    checked={form.isMinority}
+                    onChange={handleCheckbox}
+                    className="w-4 h-4 rounded text-primary-600"
+                  />
+                  🌙 Minority Community Member
+                </label>
+              </div>
+
+              {/* Disability type (conditional) */}
+              {form.disability && (
+                <div className="max-w-xs">
+                  <label className="label">Disability Type</label>
+                  <input
+                    type="text"
+                    name="disabilityType"
+                    value={form.disabilityType}
+                    onChange={handleChange}
+                    placeholder="e.g. visual, locomotor, hearing, intellectual"
+                    className="input-field"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {error && (
             <p className="text-sm text-red-600 flex items-center gap-1.5">
               ⚠️ {error}
@@ -283,6 +470,13 @@ export default function EligibilityFinder() {
       {/* Results */}
       {results && (
         <div className="animate-fade-in">
+
+          {results.regionInsight && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800 flex items-start gap-2 mb-4">
+              <span className="text-base">🗺️</span>
+              <p className="leading-relaxed">{results.regionInsight}</p>
+            </div>
+          )}
 
           {/* Summary Banner */}
           <div
@@ -311,7 +505,8 @@ export default function EligibilityFinder() {
                   Profile: Age {results.profile.age} •{' '}
                   ₹{parseInt(results.profile.income).toLocaleString('en-IN')}/year
                   {results.profile.occupation && ` • ${results.profile.occupation}`}
-                  {results.profile.state && ` • ${results.profile.state}`}
+                  {results.profile.district && ` • ${results.profile.district},`}
+                  {results.profile.state && ` ${results.profile.state}`}
                 </p>
               )}
             </div>

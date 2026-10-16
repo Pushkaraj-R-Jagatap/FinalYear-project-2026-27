@@ -105,35 +105,48 @@ const callAI = async (messages, language = 'en') => {
  * Fallback mock responses when no AI key is configured or API fails
  */
 const getMockResponse = (query, language, errMsg = null) => {
-  if (query.includes('Return ONLY a valid JSON array')) {
-    return JSON.stringify([
-      {
-        "name": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
-        "shortName": "PM-KISAN",
-        "category": "agriculture",
-        "description": "Financial support for landholding farmers.",
-        "benefits": ["₹6,000 per year in three installments"],
-        "documentsRequired": ["Aadhaar Card", "Bank Passbook", "Land Records"],
-        "applicationProcess": ["Step 1: Visit PM-KISAN portal", "Step 2: Enter Aadhaar details", "Step 3: Submit application"],
-        "officialLink": "https://pmkisan.gov.in",
-        "matchReasons": ["Based on your profile, you may be eligible."],
-        "ministry": "Ministry of Agriculture",
-        "launchYear": "2019"
-      },
-      {
-        "name": "Ayushman Bharat (PMJAY)",
-        "shortName": "PMJAY",
-        "category": "health",
-        "description": "Health insurance for poor families.",
-        "benefits": ["Health cover of ₹5 Lakhs per family per year"],
-        "documentsRequired": ["Aadhaar Card", "Ration Card"],
-        "applicationProcess": ["Step 1: Check eligibility online", "Step 2: Visit nearest CSC", "Step 3: Get Ayushman Card"],
-        "officialLink": "https://mera.pmjay.gov.in",
-        "matchReasons": ["Your income makes you eligible for this scheme."],
-        "ministry": "Ministry of Health and Family Welfare",
-        "launchYear": "2018"
-      }
-    ]);
+  if (query.includes('cybersecurity expert') || query.includes('Return ONLY a valid JSON object')) {
+    return JSON.stringify({
+      score: 75,
+      isScam: true,
+      reason: "Suspicious promises detected in image content. Government agencies never ask for OTP or processing fees."
+    });
+  }
+
+  if (query.includes('Return ONLY a valid JSON array') || query.includes('{ "schemes": [...]')) {
+    return JSON.stringify({
+      schemes: [
+        {
+          "name": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+          "shortName": "PM-KISAN",
+          "category": "agriculture",
+          "description": "Financial support for landholding farmers.",
+          "benefits": ["₹6,000 per year in three installments"],
+          "documentsRequired": ["Aadhaar Card", "Bank Passbook", "Land Records"],
+          "applicationProcess": ["Step 1: Visit PM-KISAN portal", "Step 2: Enter Aadhaar details", "Step 3: Submit application"],
+          "officialLink": "https://pmkisan.gov.in",
+          "matchReasons": ["Based on your profile, you may be eligible."],
+          "ministry": "Ministry of Agriculture",
+          "launchYear": "2019",
+          "ai_suggested": false
+        },
+        {
+          "name": "Ayushman Bharat (PMJAY)",
+          "shortName": "PMJAY",
+          "category": "health",
+          "description": "Health insurance for poor families.",
+          "benefits": ["Health cover of ₹5 Lakhs per family per year"],
+          "documentsRequired": ["Aadhaar Card", "Ration Card"],
+          "applicationProcess": ["Step 1: Check eligibility online", "Step 2: Visit nearest CSC", "Step 3: Get Ayushman Card"],
+          "officialLink": "https://mera.pmjay.gov.in",
+          "matchReasons": ["Your income makes you eligible for this scheme."],
+          "ministry": "Ministry of Health and Family Welfare",
+          "launchYear": "2018",
+          "ai_suggested": false
+        }
+      ],
+      regionInsight: "Multiple state and central welfare schemes are available for this region."
+    });
   }
 
   const lowerQuery = query.toLowerCase();
